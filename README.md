@@ -38,6 +38,12 @@ Meanings live in `js/meanings.js`: one line per hexagram, upright and reversed f
 Every result is saved to the **Journal** (kept in this browser's local storage only) and can be copied
 as text. The ☾/♪ buttons in the top bar open the journal and toggle the synthesized sound effects.
 
+## Deploying changes
+
+The site sits behind Cloudflare, which tells browsers to cache CSS and JS for four hours. Every
+stylesheet and script in `index.html` therefore carries a `?v=N` version. **Bump N with every change
+to a CSS or JS file**, or returning visitors keep the old files. `index.html` itself is never cached.
+
 ## Structure
 
 ```
