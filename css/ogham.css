@@ -1,0 +1,81 @@
+/* ================================================================= Ogham */
+.art-ogham { display: flex; gap: 14px; align-items: flex-end; }
+.art-ogham span {
+  display: grid; place-items: center; overflow: hidden; width: 30px; height: 112px; border-radius: 6px 6px 3px 3px;
+  transform: rotate(var(--r)); transform-origin: 50% 100%; transition: transform .5s var(--spring);
+  background: linear-gradient(90deg, #5b3a1e, #a77a45 30%, #c99c66 52%, #9b6d3a 75%, #4f321a);
+  box-shadow: 0 6px 14px rgba(0, 0, 0, .5);
+}
+.art-ogham b { display: block; font-weight: 400; white-space: nowrap; transform: rotate(-90deg); font-family: 'Noto Sans Ogham', 'Segoe UI Historic', serif; font-size: 30px; color: #3b220c; }
+.oracle-tile:hover .art-ogham span { transform: rotate(calc(var(--r) * 1.8)) translateY(-3px); }
+
+.og-stage { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-end; gap: 40px 80px; padding-top: 70px; min-height: 420px; }
+.og-bundle { position: relative; width: 230px; height: 300px; cursor: pointer; transform-origin: 50% 100%; outline: none; }
+.og-bundle::after {
+  content: ''; position: absolute; left: 50%; bottom: -12px; width: 180px; height: 22px; margin-left: -90px; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, .6), transparent); z-index: -1;
+}
+.og-bundle:hover .stave:not(.drawn), .og-bundle:focus-visible .stave:not(.drawn) { filter: brightness(1.12); }
+.og-bundle .stave { position: absolute; left: 50%; bottom: 0; margin-left: -17px; transform-origin: 50% 100%; transform: rotate(var(--a)) translateY(var(--lift)); transition: filter .3s; }
+.og-cord {
+  position: absolute; left: 50%; bottom: 64px; width: 84px; height: 15px; margin-left: -42px; z-index: 200; border-radius: 8px;
+  background: repeating-linear-gradient(-55deg, #d6b273 0 4px, #8d6c2f 4px 8px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, .5);
+}
+
+.stave { width: 34px; height: 260px; perspective: 900px; flex: none; }
+.sv-inner { position: relative; display: block; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 1s cubic-bezier(.3, .7, .25, 1.15); }
+.stave.revealed .sv-inner { transform: rotateY(180deg); }
+.sv-face {
+  position: absolute; inset: 0; border-radius: 8px 8px 4px 4px / 16px 16px 4px 4px;
+  backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  background:
+    repeating-linear-gradient(90deg, rgba(60, 30, 10, .16) 0 1px, transparent 1px 5px),
+    linear-gradient(90deg, #553519, hsl(30 42% calc(46% + var(--tint))) 28%, hsl(31 45% calc(58% + var(--tint))) 50%, hsl(29 42% calc(43% + var(--tint))) 74%, #4a2e16);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, .5), inset 0 2px 2px rgba(255, 230, 190, .25);
+}
+.sv-carved {
+  transform: rotateY(180deg); display: grid; place-items: center; overflow: hidden;
+  background:
+    repeating-linear-gradient(90deg, rgba(60, 30, 10, .12) 0 1px, transparent 1px 6px),
+    linear-gradient(90deg, #6d4721, #c99c66 30%, #e2bb84 50%, #bf8f57 72%, #63401d);
+}
+.sv-glyph {
+  display: block; white-space: nowrap; transform: rotate(-90deg);
+  font-family: 'Noto Sans Ogham', 'Segoe UI Historic', serif; font-size: 60px; line-height: 1;
+  color: #3a200a; text-shadow: 0 1px 0 rgba(255, 232, 190, .45), 0 -1px 0 rgba(0, 0, 0, .3);
+}
+.stave.revealed .sv-carved { box-shadow: 0 10px 20px rgba(0, 0, 0, .5), 0 0 26px rgba(217, 181, 108, .4); }
+
+.og-slots { display: flex; flex-wrap: wrap; justify-content: center; gap: 24px 36px; }
+.og-slot { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.og-well { display: grid; place-items: center; width: 62px; height: 290px; border: 1px dashed rgba(217, 181, 108, .28); border-radius: 12px; background: radial-gradient(closest-side, rgba(217, 181, 108, .06), transparent); }
+.og-label { color: var(--muted); font-style: italic; font-size: 16px; }
+
+.og-cards { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; }
+.og-card {
+  flex: 1 1 200px; max-width: 270px; text-align: center; padding: 20px 16px;
+  border: 1px solid var(--line); border-radius: 16px; background: rgba(0, 0, 0, .22);
+  animation: rise .7s var(--ease) both; animation-delay: calc(var(--d) * .1s);
+}
+.og-cglyph { height: 150px; display: grid; place-items: center; }
+.og-cglyph span { display: inline-block; white-space: nowrap; transform: rotate(-90deg); font-family: 'Noto Sans Ogham', 'Segoe UI Historic', serif; font-size: 56px; color: var(--gold-hi); text-shadow: 0 0 20px rgba(217, 181, 108, .45); }
+.og-name { font-family: var(--display); font-size: 22px; font-weight: 600; color: var(--gold-hi); letter-spacing: .05em; }
+.og-meta { font-style: italic; }
+.og-aicme { font-family: var(--display); font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+
+@media (max-width: 600px) {
+  .og-stage { flex-wrap: nowrap; gap: 10px; padding-top: 50px; min-height: 0; }
+  .og-bundle { width: 136px; height: 230px; flex: none; }
+  .og-bundle::after { width: 130px; margin-left: -65px; }
+  .stave { width: 26px; height: 200px; }
+  .og-bundle .stave { margin-left: -13px; }
+  .og-cord { bottom: 50px; width: 62px; margin-left: -31px; height: 13px; }
+  .sv-glyph { font-size: 46px; }
+  .og-slots { flex-wrap: nowrap; gap: 8px; }
+  .og-slot { gap: 8px; }
+  .og-well { width: 46px; height: 220px; }
+  .og-label { font-size: 13px; }
+  .og-cglyph { height: 120px; }
+  .og-cglyph span { font-size: 46px; }
+}

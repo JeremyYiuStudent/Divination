@@ -1,0 +1,152 @@
+/* =============================================================== Kau Cim */
+.art-kc { position: relative; width: 96px; height: 124px; }
+.akc-sticks i {
+  position: absolute; bottom: 40px; left: calc(18px + var(--x) * 7px); width: 4px; height: var(--h); border-radius: 2px;
+  background: linear-gradient(180deg, #c0392b 0 12px, #e8c98e 12px);
+  transform: rotate(calc((var(--x) - 4) * 3deg)); transform-origin: bottom center; transition: transform .5s var(--spring);
+}
+.oracle-tile:hover .akc-sticks i:nth-child(5) { transform: translateY(-16px); }
+.akc-cup {
+  position: absolute; bottom: 0; left: 12px; width: 72px; height: 74px; z-index: 2; display: grid; place-items: center;
+  border-radius: 8px 8px 16px 16px; font-family: var(--cjk); font-weight: 700; font-size: 24px; color: #f3d28a;
+  background: linear-gradient(90deg, #6b1712, #c0392b 30%, #d9493a 48%, #a82a20 72%, #5a110d);
+  box-shadow: inset 0 3px 0 #d9b56c, 0 10px 20px rgba(0, 0, 0, .5);
+}
+
+.kc-altar { position: relative; display: flex; flex-direction: column; align-items: center; min-height: 560px; padding-top: 10px; }
+.kc-altar.blocks-only { min-height: 380px; justify-content: center; }
+
+/* incense */
+.kc-incense { position: absolute; left: 6%; top: 120px; display: flex; gap: 10px; align-items: flex-end; height: 200px; pointer-events: none; }
+.kc-incense i { position: relative; display: block; width: 3px; height: 150px; border-radius: 2px; background: linear-gradient(180deg, #ffb35c 0 3px, #8a2a12 3px 55%, #d0a868 55%); box-shadow: 0 -2px 8px rgba(255, 150, 60, .8); }
+.kc-incense i:nth-child(2) { height: 165px; }
+.kc-incense i::before {
+  content: ''; position: absolute; bottom: 100%; left: -14px; width: 30px; height: 140px;
+  background: radial-gradient(ellipse 40% 60% at 50% 100%, rgba(220, 220, 240, .28), transparent 70%);
+  filter: blur(7px); transform-origin: 50% 100%; animation: smoke 6s ease-in-out infinite;
+}
+.kc-incense i:nth-child(2)::before { animation-delay: -2s; }
+.kc-incense i:nth-child(3)::before { animation-delay: -4s; }
+@keyframes smoke {
+  0% { transform: translateY(0) scaleY(.6) skewX(0deg); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translateY(-60px) scaleY(1.4) skewX(18deg); opacity: 0; }
+}
+@media (max-width: 700px) { .kc-incense { display: none; } }
+
+/* cylinder */
+.kc-cup-wrap { position: relative; cursor: grab; user-select: none; -webkit-user-select: none; touch-action: none; outline: none; padding-top: 40px; }
+.kc-cup-wrap:active { cursor: grabbing; }
+.kc-cup-wrap:focus-visible .kc-tube { box-shadow: inset 0 10px 14px rgba(0, 0, 0, .45), 0 0 0 3px var(--gold); }
+.kc-cup { position: relative; width: 150px; height: 330px; transform-origin: 50% 92%; transform: rotate(-6deg); transition: transform .5s var(--ease); }
+.kc-cup-wrap:hover .kc-cup { transform: rotate(-9deg); }
+.kc-cup.shaking { animation: kcShake .13s ease-in-out infinite alternate; }
+@keyframes kcShake {
+  from { transform: rotate(-16deg) translateY(0); }
+  to { transform: rotate(-5deg) translateY(-7px); }
+}
+.kc-rim {
+  position: absolute; left: 2px; right: 2px; top: 90px; height: 24px; border-radius: 50%; z-index: 1;
+  background: radial-gradient(ellipse at 50% 70%, #1a0403, #3a0b07 70%);
+  box-shadow: 0 0 0 4px #c9a24e, inset 0 4px 8px #000;
+}
+.kc-sticks { position: absolute; left: 14px; right: 14px; bottom: 20px; height: 0; z-index: 5; }
+.kc-stick {
+  position: absolute; bottom: 0; width: 7px; height: calc(var(--h) * var(--hs, 1)); margin-left: -3.5px; border-radius: 3px 3px 1px 1px;
+  background: linear-gradient(90deg, #a87b3f, #ecd099 45%, #c39a5a);
+  box-shadow: 0 0 2px rgba(0, 0, 0, .45);
+  transform-origin: 50% 100%; transform: translateY(var(--rise, 0px)) rotate(var(--r));
+  transition: opacity .3s;
+}
+.kc-stick::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 22px; border-radius: 3px 3px 0 0; background: linear-gradient(90deg, #7d150e, #c8392b 50%, #8f1a11); }
+.kc-cup.shaking .kc-stick { animation: kcJitter .09s ease-in-out infinite alternate; }
+.kc-cup.shaking .kc-stick:nth-child(3n) { animation-duration: .11s; }
+.kc-cup.shaking .kc-stick:nth-child(3n + 1) { animation-duration: .075s; animation-direction: alternate-reverse; }
+@keyframes kcJitter { from { translate: 0 0; } to { translate: 0 -5px; } }
+.kc-stick.riser { z-index: 6 !important; filter: brightness(1.12) drop-shadow(0 0 6px rgba(246, 220, 156, .55)); }
+.kc-stick.gone { opacity: 0; }
+.kc-tube {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 228px; z-index: 10;
+  border-radius: 10px 10px 24px 24px / 8px 8px 24px 24px;
+  background: linear-gradient(90deg, #5a110d, #a82a20 18%, #d9493a 40%, #c0392b 58%, #8f1d14 80%, #4a0c08);
+  border-top: 4px solid #d9b56c;
+  box-shadow: inset 0 10px 14px rgba(0, 0, 0, .35), 0 24px 40px rgba(0, 0, 0, .6);
+}
+.kc-band { position: absolute; left: 0; right: 0; height: 10px; background: linear-gradient(180deg, #f1d07e, #9c7428); box-shadow: 0 1px 2px rgba(0, 0, 0, .4); }
+.kc-band.b1 { top: 26px; }
+.kc-band.b2 { bottom: 26px; }
+.kc-tube-label { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: var(--cjk); font-weight: 700; font-size: 50px; color: #f3d28a; text-shadow: 0 2px 0 #5a110d, 0 0 18px rgba(243, 210, 138, .35); }
+.kc-progress { width: 150px; height: 3px; margin: 20px auto 0; border-radius: 2px; overflow: hidden; background: rgba(255, 255, 255, .08); }
+.kc-progress i { display: block; height: 100%; background: linear-gradient(90deg, var(--gold-lo), var(--gold-hi)); transform: scaleX(0); transform-origin: left; }
+.btn.kc-hold { touch-action: none; user-select: none; -webkit-user-select: none; }
+
+/* floor */
+.kc-floor { position: relative; width: min(600px, 100%); min-height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 20px; }
+.kc-floor::before {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 150px; border-radius: 50%; z-index: -1;
+  background: radial-gradient(ellipse at center, rgba(150, 26, 20, .45), rgba(70, 10, 8, .2) 60%, transparent 72%);
+  border: 1px solid rgba(217, 181, 108, .12);
+}
+.blocks-only .kc-floor { min-height: 300px; }
+.kc-fallen { position: relative; display: flex; justify-content: center; align-items: center; width: 100%; min-height: 70px; }
+.kc-bigstick {
+  position: relative; display: flex; align-items: center; justify-content: center; gap: 18px;
+  width: min(320px, 80vw); height: 28px; border-radius: 4px 14px 14px 4px;
+  background: linear-gradient(180deg, #f4dba6, #cfa565 60%, #a47c43);
+  box-shadow: 0 10px 18px rgba(0, 0, 0, .55);
+}
+.kc-bigstick::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 44px; border-radius: 0 14px 14px 0; background: linear-gradient(180deg, #d8473a, #8c1d14); }
+.kc-bigstick.second { position: absolute; }
+.kc-no { font-family: var(--cjk); font-weight: 700; font-size: 18px; letter-spacing: .18em; color: #8c1d14; }
+.kc-ar { font-family: var(--display); font-weight: 700; font-size: 14px; color: #5a3a12; }
+
+/* moon blocks */
+.kc-blocks { display: flex; justify-content: center; gap: 70px; margin-top: 22px; opacity: 0; transform: translateY(20px); transition: opacity .6s, transform .6s var(--ease); pointer-events: none; }
+.kc-blocks.ready { opacity: 1; transform: none; }
+.jb { position: relative; width: 120px; height: 60px; perspective: 700px; }
+.jb-inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; }
+.jb-face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.jb-round { transform: rotateX(180deg); }
+.jb svg { display: block; width: 100%; height: 100%; filter: drop-shadow(0 5px 5px rgba(0, 0, 0, .45)); }
+.jb-shadow { position: absolute; left: 12%; right: 12%; bottom: -12px; height: 14px; border-radius: 50%; background: radial-gradient(closest-side, rgba(0, 0, 0, .6), transparent); }
+
+/* result */
+.kc-slip {
+  position: relative; margin: 0 auto; width: min(240px, 80%); padding: 26px 18px 20px; text-align: center;
+  background: linear-gradient(180deg, #f8ebc9, #e8d09c); color: #5a1a10; border-radius: 6px;
+  border: 2px solid #b8312b; outline: 1px solid rgba(184, 49, 43, .6); outline-offset: -9px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .55); animation: slipIn .9s var(--spring) both;
+}
+@keyframes slipIn { from { opacity: 0; transform: translateY(30px) rotate(-4deg) scale(.9); } }
+.kc-slip-no { display: inline-block; writing-mode: vertical-rl; font-family: var(--cjk); font-weight: 700; font-size: 40px; letter-spacing: .14em; color: #8c1d14; }
+.kc-slip-ar { margin-top: 12px; font-family: var(--display); font-weight: 700; font-size: 18px; letter-spacing: .1em; }
+.kc-slip-conf { margin-top: 4px; font-style: italic; font-size: 15px; color: #7a4a26; }
+.kc-verdict { text-align: center; }
+.kc-vzh { font-family: var(--cjk); font-weight: 700; font-size: 60px; color: var(--gold-hi); line-height: 1.2; text-shadow: 0 0 24px rgba(217, 181, 108, .35); }
+.kc-vpy { font-style: italic; font-size: 22px; }
+.kc-ven { font-family: var(--display); letter-spacing: .14em; text-transform: uppercase; color: var(--gold); font-size: 14px; margin-top: 4px; }
+.kc-verdict p { color: var(--muted); margin: 10px 0 0; }
+.kc-history { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin-top: 20px; }
+.kc-h { font-family: var(--cjk); font-size: 14px; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--line); color: var(--muted); }
+.kc-h.holy { color: var(--gold-hi); border-color: var(--gold); }
+.kc-h.yin { color: #e59a90; border-color: rgba(229, 154, 144, .4); }
+.kc-h.laugh { color: #9fc8e6; border-color: rgba(159, 200, 230, .4); }
+
+@media (max-width: 600px) {
+  .kc-altar { min-height: 0; }
+  .kc-cup-wrap { padding-top: 24px; }
+  .kc-cup { width: 124px; height: 280px; --hs: .84; }
+  .kc-tube { height: 190px; }
+  .kc-rim { top: 78px; height: 22px; }
+  .kc-band.b1 { top: 20px; } .kc-band.b2 { bottom: 20px; }
+  .kc-tube-label { font-size: 40px; }
+  .kc-stick { width: 6px; margin-left: -3px; }
+  .kc-progress { width: 124px; }
+  .kc-floor { min-height: 160px; padding-bottom: 12px; }
+  .kc-floor::before { height: 120px; }
+  .kc-blocks { gap: 34px; margin-top: 14px; }
+  .jb { width: 92px; height: 46px; }
+  .kc-no { font-size: 16px; }
+  .kc-vzh { font-size: 50px; }
+  .blocks-only .kc-floor { min-height: 240px; }
+}
