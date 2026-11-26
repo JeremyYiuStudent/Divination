@@ -55,16 +55,20 @@
       root.innerHTML = `
         <div class="controls gm-controls"></div>
         <div class="status gm-status"></div>
-        <div class="gm-tray panel"></div>
+        <div class="gm-stage stagebox">
+          <div class="gm-tray panel"></div>
+          <div class="gm-shield-wrap"></div>
+        </div>
         <div class="actions gm-actions"></div>
-        <div class="gm-shield-wrap"></div>
         <div class="result-wrap gm-result"></div>`;
       const controls = $('.gm-controls', root);
       const status = $('.gm-status', root);
+      const gstage = $('.gm-stage', root);
       const tray = $('.gm-tray', root);
       const actions = $('.gm-actions', root);
       const shieldWrap = $('.gm-shield-wrap', root);
       const resultBox = $('.gm-result', root);
+      ctx.fit(gstage, [340, 515], 1.2); // sized for the shield chart; the tray stretches on its own
 
       controls.append(UI.seg([
         { value: 'stylus', label: L('Let the stylus fall', '由笔自落') },
@@ -72,7 +76,7 @@
       ], mode, (v) => { mode = v; App.store.set('geo.mode', v); reset(); }));
 
       function say(text) {
-        status.innerHTML = text;
+        status.innerHTML = `<span>${text}</span>`;
         status.classList.remove('swap'); void status.offsetWidth; status.classList.add('swap');
       }
       function setActions(...els) { actions.innerHTML = ''; els.forEach((e) => e && actions.appendChild(e)); }
@@ -91,6 +95,7 @@
       const lineEl = (i) => $(`.gm-line[data-l="${i}"]`, tray);
       // On phones the tray is taller than the screen; keep the line being marked in view.
       function keepVisible(el) {
+        if (App.phone()) return; // the whole tray is on screen
         const r = el.getBoundingClientRect();
         const bottom = innerHeight - (innerWidth <= 700 ? 120 : 24);
         if (r.bottom > bottom || r.top < 70) el.scrollIntoView({ block: 'center', behavior: App.reduced ? 'auto' : 'smooth' });
@@ -109,6 +114,7 @@
         counts = []; busy = false; phase = 'ready'; handRow = 0;
         tray.innerHTML = trayHTML();
         tray.classList.remove('done', 'hand');
+        gstage.classList.remove('shield');
         shieldWrap.innerHTML = '';
         resultBox.innerHTML = '';
         UI.lock(controls, false);
@@ -223,11 +229,12 @@
 
         shieldWrap.innerHTML = `<div class="gm-shield panel">
           <div class="gm-shield-title eyebrow">${L('The Shield Chart', '盾形图')} <span>${L('· read from right to left', '· 自右向左读')}</span></div>
-          <div class="gm-grid"></div>
+          <div class="gm-grid"><div class="gm-glab d phone-only">${L('Daughters', '四女')}</div><div class="gm-glab m phone-only">${L('Mothers', '四母')}</div></div>
           <div class="gm-recon"></div>
         </div>`;
         const grid = $('.gm-grid', shieldWrap);
-        shieldWrap.scrollIntoView({ behavior: App.reduced ? 'auto' : 'smooth', block: 'start' });
+        gstage.classList.add('shield'); // on phones the chart takes the tray's place
+        if (!App.phone()) shieldWrap.scrollIntoView({ behavior: App.reduced ? 'auto' : 'smooth', block: 'start' });
         await ctx.wait(500);
 
         const place = async (rows, title, cls, parents, target) => {
@@ -260,7 +267,7 @@
         Sfx.reveal();
         App.sparkle(j, 26);
         await ctx.wait(700);
-        await place(RC, T.recon(), 'recon', [j, mEls[0]], $('.gm-recon', shieldWrap));
+        await place(RC, T.recon(), 'recon', [j, mEls[0]], App.phone() ? grid : $('.gm-recon', shieldWrap));
         say(L(`The Judge is <b>${fig(J).name}</b>.`, `判官为 <b>${fig(J).name}（${fig(J).zh}）</b>。`));
         busy = false; phase = 'done';
         UI.lock(controls, false);
@@ -274,20 +281,35 @@
           ...c.N.map((r, i) => [T.niece(i), r]),
           [T.rw(), c.RW], [T.lw(), c.LW], [T.judge(), c.J], [T.recon(), c.RC],
         ];
-        const keyFig = (title, r, cls) => { const f = fig(r); return `<div class="gm-key ${cls}"><div class="eyebrow">${title}</div><div class="gm-kname">${fname(f)}</div><div class="gm-kgloss">${fgloss(f)}</div><p class="meaning">${esc(fmean(r))}</p></div>`; };
-        const list = rows.map(([pos, r], k) => {
+        const keyFig = (title, r, cls) => { const f = fig(r); return `<div class="gm-key ${cls}"><div class="eyebrow">${title}</div>${dotsHTML(r)}<div class="gm-kname">${fname(f)}</div><div class="gm-kgloss">${fgloss(f)}</div><p class="meaning">${esc(fmean(r))}</p></div>`; };
+        const dotsHTML = (r) => `<div class="gm-kdots phone-only">${r.map((x) => `<div class="gm-drow">${x === 1 ? '<i></i>' : '<i></i><i></i>'}</div>`).join('')}</div>`;
+        const item = ([pos, r], k) => {
           const f = fig(r);
           return `<li class="${r === c.J ? 'is-judge' : ''}" style="--d:${k}"><span class="gp">${pos}</span><span class="gmini">${r.map((x) => `<span>${x === 1 ? '•' : '• •'}</span>`).join('')}</span><span class="gn">${f.name}</span><span class="ge">${fgloss(f)}</span><span class="gm-lmean">${esc(fmean(r))}</span></li>`;
-        }).join('');
-        const panel = h(`<div class="result panel gm-res">
-          <h3>${L('The Judgement', '判断')}</h3>
-          ${keyFig(T.judge(), c.J, 'judge')}
-          <div class="gm-keys">${keyFig(T.rw(), c.RW, 'rw')}${keyFig(T.lw(), c.LW, 'lw')}</div>
-          <p class="guide">${L('The Judge answers the question as a whole. The Right Witness speaks for the querent and the past, the Left Witness for the matter and the future; the Reconciler (Judge + First Mother) adds a final nuance.', '判官回答整体问题。右证人代表求问者与过去，左证人代表所问之事与未来；调和者（判官 + 母一）补充最后的细节。')}</p>
-          <h3 class="gm-sub">${L('All Figures', '全部图形')}</h3>
-          <ol class="gm-list">${list}</ol>
-        </div>`);
-        panel.appendChild(UI.resultActions(() => L('Geomancy — shield chart', '地占术 — 盾形图') + '\n' + rows.map(([p, r]) => `${p}: ${fname(fig(r))} — ${fmean(r)}`).join('\n'), () => { reset(); window.scrollTo({ top: 0, behavior: 'smooth' }); }));
+        };
+        const guide = L('The Judge answers the question as a whole. The Right Witness speaks for the querent and the past, the Left Witness for the matter and the future; the Reconciler (Judge + First Mother) adds a final nuance.', '判官回答整体问题。右证人代表求问者与过去，左证人代表所问之事与未来；调和者（判官 + 母一）补充最后的细节。');
+        // Phones page through the other figures two at a time; desktop lists all sixteen.
+        const mini = ([pos, r]) => {
+          const f = fig(r);
+          return `<div class="gm-pc">${dotsHTML(r).replace('phone-only', '')}<div class="gm-pc-text"><div class="eyebrow">${pos}</div><div class="gm-pc-name">${fname(f)} <span>${fgloss(f)}</span></div><p class="gm-pc-mean">${esc(fmean(r))}</p></div></div>`;
+        };
+        const pairs = [
+          [L('Mothers I–II', '母一、母二'), 0], [L('Mothers III–IV', '母三、母四'), 2],
+          [L('Daughters I–II', '女一、女二'), 4], [L('Daughters III–IV', '女三、女四'), 6],
+          [L('Nieces I–II', '侄一、侄二'), 8], [L('Nieces III–IV', '侄三、侄四'), 10],
+        ];
+        const pages = [
+          { cls: 'judge', label: T.judge(), html: keyFig(T.judge(), c.J, 'judge') + `<p class="guide phone-only">${guide}</p>` },
+          { cls: 'half', label: T.rw(), html: keyFig(T.rw(), c.RW, 'rw') },
+          { cls: 'half', label: T.lw(), html: keyFig(T.lw(), c.LW, 'lw') },
+          { cls: 'phone-only', label: T.recon(), html: keyFig(T.recon(), c.RC, 'recon') },
+          ...pairs.map(([name, from]) => ({ cls: 'phone-only gm-pair', label: name, html: rows.slice(from, from + 2).map(mini).join('') })),
+          { cls: 'desk-only', html: `<p class="guide">${guide}</p><h3 class="gm-sub">${L('All Figures', '全部图形')}</h3><ol class="gm-list">${rows.map(item).join('')}</ol>` },
+        ];
+        const panel = UI.reading({
+          cls: 'gm-res', title: L('The Judgement', '判断'), pages, onAgain: reset,
+          getText: () => L('Geomancy — shield chart', '地占术 — 盾形图') + '\n' + rows.map(([p, r]) => `${p}: ${fname(fig(r))} — ${fmean(r)}`).join('\n'),
+        });
         resultBox.innerHTML = '';
         resultBox.appendChild(panel);
         App.record('geomancy', L(`Judge: ${fig(c.J).name} (${fig(c.J).eng})`, `判官：${fig(c.J).name}（${fig(c.J).zh}）`),

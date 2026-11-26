@@ -79,3 +79,23 @@
   .og-cglyph { height: 120px; }
   .og-cglyph span { font-size: 46px; }
 }
+
+.og-res .rd-page.card { display: flex; flex: 1 1 200px; max-width: 270px; }
+.og-res .og-card { flex: 1 1 auto; max-width: none; }
+
+/* phones: bundle and wells side by side, scaled by --k */
+@media (max-width: 700px) {
+  .og-table { --k: 1; display: flex; align-items: center; justify-content: center; }
+  .og-stage { padding-top: calc(40px * var(--k)); gap: calc(12px * var(--k)); }
+  .og-bundle { width: calc(136px * var(--k)); height: calc(230px * var(--k)); }
+  .og-bundle::after { width: calc(130px * var(--k)); margin-left: calc(-65px * var(--k)); }
+  .stave { width: calc(26px * var(--k)); height: calc(200px * var(--k)); }
+  .og-bundle .stave { margin-left: calc(-13px * var(--k)); }
+  .og-cord { bottom: calc(50px * var(--k)); width: calc(62px * var(--k)); margin-left: calc(-31px * var(--k)); height: calc(13px * var(--k)); }
+  .sv-glyph { font-size: calc(46px * var(--k)); }
+  .og-slots { gap: calc(8px * var(--k)); }
+  .og-well { width: calc(46px * var(--k)); height: calc(220px * var(--k)); }
+
+  .og-res .rd-page.card { flex: 0 0 100%; max-width: none; }
+  .og-res .og-card { flex: none; animation: none; }
+}

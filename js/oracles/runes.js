@@ -87,12 +87,13 @@
       root.innerHTML = `
         <div class="controls rn-controls"></div>
         <div class="status rn-status"></div>
-        <div class="rn-table"></div>
+        <div class="rn-table stagebox"></div>
         <div class="actions rn-actions"></div>
         <div class="result-wrap rn-result"></div>`;
       const controls = $('.rn-controls', root);
       const status = $('.rn-status', root);
       const table = $('.rn-table', root);
+      ctx.fit(table, [340, 330], 1.2);
       const actions = $('.rn-actions', root);
       const resultBox = $('.rn-result', root);
 
@@ -105,7 +106,7 @@
 
       const M = () => { const m = METHODS[methodId]; return { n: m.n, kind: m.kind, label: tr(m.label), pos: m.pos.map(tr) }; };
       function say(text) {
-        status.innerHTML = text;
+        status.innerHTML = `<span>${text}</span>`;
         status.classList.remove('swap'); void status.offsetWidth; status.classList.add('swap');
       }
       function setActions(...els) { actions.innerHTML = ''; els.forEach((e) => e && actions.appendChild(e)); }
@@ -155,10 +156,11 @@
         const pr = pouch.getBoundingClientRect(), sr = st.getBoundingClientRect();
         const dx = pr.left + pr.width / 2 - (sr.left + sr.width / 2);
         const dy = pr.top + pr.height * 0.3 - (sr.top + sr.height / 2);
+        const arc = App.phone() ? 70 * App.k(table) : 110;
         Sfx.whoosh(0.35);
         await ctx.anim(st, [
           { transform: `translate(${dx}px, ${dy}px) scale(.2)`, opacity: 0 },
-          { transform: `translate(${dx * 0.6}px, ${dy - 110}px) scale(.9) rotate(-20deg)`, opacity: 1, offset: 0.45 },
+          { transform: `translate(${dx * 0.6}px, ${dy - arc}px) scale(.9) rotate(-20deg)`, opacity: 1, offset: 0.45 },
           { transform: 'translate(0,0) scale(1) rotate(0deg)' },
         ], { duration: 900, easing: 'cubic-bezier(.3,.6,.3,1)' });
         Sfx.stone();
@@ -269,8 +271,10 @@
         setActions();
         say(M().n === 1 ? L('The rune is drawn.', '符文已抽出。') : L('The runes are drawn.', '符文已全部抽出。'));
         Sfx.reveal();
-        const panel = h(`<div class="result panel rn-res"><h3>${esc(M().label)}</h3><div class="rn-cards">${drawn.map((d, k) => runeCard(d, M().pos[k], k)).join('')}</div></div>`);
-        panel.appendChild(UI.resultActions(summary, () => { reset(); window.scrollTo({ top: 0, behavior: 'smooth' }); }));
+        const panel = UI.reading({
+          cls: 'rn-res', title: esc(M().label), getText: summary, onAgain: reset,
+          pages: drawn.map((d, k) => ({ cls: 'card', label: M().pos[k], html: runeCard(d, M().pos[k], k) })),
+        });
         resultBox.innerHTML = '';
         resultBox.appendChild(panel);
         App.record('runes', `${M().label}: ${drawn.map((d) => d.rune.name + (d.merk ? L(' (merkstave)', '（逆）') : '')).join(L(', ', '、'))}`,

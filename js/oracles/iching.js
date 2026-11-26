@@ -53,9 +53,9 @@
     </div>`);
   }
 
-  function hexCard(hx, label) {
+  function hexCard(hx, label, note) {
     return `<div class="hexcard">
-      <div class="eyebrow">${label}</div>
+      <div class="eyebrow">${label}</div>${note ? `<div class="hc-via phone-only">${note}</div>` : ''}
       <div class="hc-glyph">${String.fromCodePoint(0x4DC0 + hx.n - 1)}</div>
       <div class="hc-num">${L(`Hexagram ${hx.n}`, `第 ${hx.n} 卦`)}</div>
       <div class="hc-zh">${hx.zh}</div>
@@ -96,7 +96,7 @@
       root.innerHTML = `
         <div class="controls ic-controls"></div>
         <div class="status ic-status"></div>
-        <div class="ic-stage">
+        <div class="ic-stage stagebox">
           <div class="ic-ritual panel">
             <div class="ic-coins"></div>
             <div class="ic-yarrow" hidden>
@@ -150,13 +150,18 @@
       ], method, (v) => { method = v; App.store.set('iching.method', v); if (lines.length === 6) reset(); else applyMethod(); });
       controls.appendChild(seg);
 
+      // The ritual and the hexagram are drawn for this many px, then scaled to the room on phones.
+      const refit = ctx.fit($('.ic-stage', root), () => (method === 'yarrow' ? [330, 545] : [330, 478]), 1.2);
+
+      const phone = App.phone();
       const castBtn = UI.btn('', () => castOne(), { primary: true });
-      const allBtn = h(`<button type="button" class="linkbtn">${L('cast the remaining lines in one motion', '一气呵成，起完余下各爻')}</button>`);
+      const allBtn = h(`<button type="button" class="linkbtn">${phone ? L('all at once', '一气起完') : L('cast the remaining lines in one motion', '一气呵成，起完余下各爻')}</button>`);
       allBtn.addEventListener('click', () => castAll());
       actions.append(castBtn, allBtn);
 
       function say(text) {
-        status.textContent = text;
+        status.innerHTML = '<span></span>';
+        status.firstChild.textContent = text;
         status.classList.remove('swap'); void status.offsetWidth; status.classList.add('swap');
       }
 
@@ -165,14 +170,17 @@
         yarrow.hidden = method !== 'yarrow';
         tally.textContent = '';
         if (method === 'yarrow') { pileL.innerHTML = stickRow(24); pileR.innerHTML = stickRow(25); asideN.textContent = '0'; leftN.textContent = '49'; }
+        refit();
         updateUI();
       }
 
       function updateUI() {
         const n = lines.length + 1;
-        castBtn.innerHTML = method === 'coins'
-          ? L(`Toss the coins <small>· line ${n} of 6</small>`, `掷钱 <small>· 第 ${n} / 6 爻</small>`)
-          : L(`Divide the stalks <small>· line ${n} of 6</small>`, `分蓍 <small>· 第 ${n} / 6 爻</small>`);
+        castBtn.innerHTML = phone
+          ? (method === 'coins' ? L(`Toss <small>· ${n} / 6</small>`, `掷钱 <small>· ${n} / 6</small>`) : L(`Divide <small>· ${n} / 6</small>`, `分蓍 <small>· ${n} / 6</small>`))
+          : method === 'coins'
+            ? L(`Toss the coins <small>· line ${n} of 6</small>`, `掷钱 <small>· 第 ${n} / 6 爻</small>`)
+            : L(`Divide the stalks <small>· line ${n} of 6</small>`, `分蓍 <small>· 第 ${n} / 6 爻</small>`);
         castBtn.disabled = busy;
         allBtn.hidden = busy || lines.length === 0 || lines.length >= 6;
         UI.lock(controls, lines.length > 0);
@@ -295,11 +303,6 @@
         busy = true;
         updateUI();
         const idx = lines.length;
-        if (idx === 0 && innerWidth <= 700) {
-          // On phones, frame the coins and the hexagram together before the first toss.
-          const top = $('.ic-stage', root).getBoundingClientRect().top + scrollY - 56;
-          window.scrollTo({ top, behavior: App.reduced ? 'auto' : 'smooth' });
-        }
         if (method === 'coins') say(L(`The ${ORD[idx]} line.`, `${ORD_ZH[idx]}。`));
         const v = method === 'coins' ? await tossCoins() : await yarrowLine();
         lines.push(v);
@@ -383,14 +386,21 @@
           ? L('The primary hexagram describes the situation as it stands; the relating hexagram shows where it is tending. Traditionally the changing lines carry particular weight.',
             '本卦描述当前的处境，之卦显示事态发展的趋向。传统上，变爻的爻辞尤为关键。')
           : L('With no changing lines, the primary hexagram speaks as a whole.', '无变爻，以本卦卦辞整体论断。');
-        const panel = h(`<div class="result panel ic-res">
-          <h3>${L('The Reading', '卦象')}</h3>
-          <div class="ic-cards">${hexCard(prim, L('Primary', '本卦'))}${rel ? `<div class="ic-cards-arrow"><span>→</span><small>${L(`line${chg.length > 1 ? 's' : ''} ${chg.map((i) => i + 1).join(', ')}`, chg.map((i) => ORD_ZH[i]).join('、'))}</small></div>${hexCard(rel, L('Relating', '之卦'))}` : ''}</div>
-          <p class="guide">${guide}</p>
-          <ol class="ic-linelist">${lineRows}</ol>
-          <p class="hint">${L('Lines are numbered from the bottom.', '爻位自下而上计数。')} ${rel ? L('Changing lines are marked ○ (old yang) and × (old yin).', '变爻以 ○（老阳）与 ×（老阴）标示。') : ''}</p>
-        </div>`);
-        panel.appendChild(UI.resultActions(() => summaryText(prim, rel, chg), reset));
+        const via = L(`line${chg.length > 1 ? 's' : ''} ${chg.map((i) => i + 1).join(', ')}`, chg.map((i) => ORD_ZH[i]).join('、'));
+        const pages = [{ cls: 'card', label: L('Primary', '本卦'), html: hexCard(prim, L('Primary', '本卦')) }];
+        if (rel) {
+          pages.push(
+            { cls: 'arrow desk-only', html: `<div class="ic-cards-arrow"><span>→</span><small>${via}</small></div>` },
+            { cls: 'card', label: L('Relating', '之卦'), html: hexCard(rel, L('Relating', '之卦'), L(`changing ${via}`, `变爻：${via}`)) }
+          );
+        }
+        pages.push({
+          cls: 'lines', label: L('The six lines', '六爻'),
+          html: `<p class="guide">${guide}</p>
+            <ol class="ic-linelist">${lineRows}</ol>
+            <p class="hint">${L('Lines are numbered from the bottom.', '爻位自下而上计数。')} ${rel ? L('Changing lines are marked ○ (old yang) and × (old yin).', '变爻以 ○（老阳）与 ×（老阴）标示。') : ''}</p>`,
+        });
+        const panel = UI.reading({ cls: 'ic-res', title: L('The Reading', '卦象'), pages, getText: () => summaryText(prim, rel, chg), onAgain: reset });
         resultBox.innerHTML = '';
         resultBox.appendChild(panel);
         App.record('iching',

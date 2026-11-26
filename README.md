@@ -7,6 +7,11 @@ its general traditional meaning. Applying that meaning is left to you.
 The interface is in **English and Simplified Chinese** (the 中文 / EN button in the top bar; the first
 visit follows the browser language). It is built for desktop and phones in portrait.
 
+On phones the app is a single screen that never scrolls. Swipe through the oracles on the home screen
+and tap one to begin. Each ritual is scaled to fit the space between the header and the buttons. When
+it finishes, the reading opens as a full-screen sheet over the header, with swipeable pages (one per
+card, rune, stave, hexagram or group of figures). The ⌄ button lowers the sheet to show the table again.
+
 Live at **<https://jeremyyiu.org/divination/>** (deployed as a submodule of
 [JeremyYiuResume](https://github.com/JeremyYiuStudent/JeremyYiuResume)).
 
@@ -50,3 +55,7 @@ To add an oracle, create `js/oracles/<name>.js` that calls `Div.App.register({ i
 subtitle, blurb, art, mount(root, ctx) })`. Text fields take `{ en, zh }` pairs; inside `mount`, use
 `Div.L(en, zh)` for strings, then add its script and stylesheet to `index.html`.
 `ctx.wait` / `ctx.anim` stop resolving once the view is left, so ritual sequences can't leak.
+For phones, give the ritual's container the `stagebox` class and call `ctx.fit(el, [w, h])`. The
+container then gets a `--k` scale for a drawing designed at w × h px. Hand the finished reading to
+`Div.UI.reading({ title, pages, getText, onAgain })`, which shows it as a panel on desktop and as a
+swipeable sheet on phones.

@@ -93,3 +93,30 @@
   .rn-caststage { gap: 18px; }
   .rn-glyph { font-size: 64px; }
 }
+
+.rn-res .rd-page.card { display: flex; flex: 1 1 210px; max-width: 280px; }
+.rn-res .rn-card { flex: 1 1 auto; max-width: none; }
+
+/* phones: pouch or cloth above, the three wells below, scaled by --k */
+@media (max-width: 700px) {
+  .rn-table { --k: 1; display: flex; align-items: center; justify-content: center; }
+  .rn-pouchstage { flex-direction: column; flex-wrap: nowrap; gap: calc(14px * var(--k)); }
+  .rn-pouch { width: calc(150px * var(--k)); }
+  .rn-slots { gap: 6px; }
+  .rn-slot { width: calc(106px * var(--k)); gap: 6px; }
+  .rn-well { width: calc(84px * var(--k)); height: calc(90px * var(--k)); }
+  .rn-well .stone { width: calc(64px * var(--k)); height: calc(70px * var(--k)); }
+  .rn-well .st-glyph { font-size: calc(32px * var(--k)); }
+  .rn-label { font-size: 14px; min-height: 2.5em; }
+  .rn-caststage { height: 100%; justify-content: center; gap: 8px; }
+  .rn-cloth { flex: none; width: min(100%, calc(var(--sh, 400px) - 68px * var(--k) - 46px)); }
+  .rn-caststage .rn-label { min-height: 0; white-space: nowrap; }
+  .rn-caststage .rn-well { width: calc(62px * var(--k)); height: calc(68px * var(--k)); }
+  .rn-caststage .rn-well .stone { width: calc(52px * var(--k)); height: calc(58px * var(--k)); }
+  .rn-caststage .rn-well .st-glyph { font-size: calc(27px * var(--k)); }
+  .stone.cast .st-glyph { font-size: calc(var(--sh, 400px) * .07); }
+
+  .rn-res .rd-page.card { flex: 0 0 100%; max-width: none; }
+  .rn-res .rn-card { flex: none; animation: none; }
+  .rn-res .rn-glyph { font-size: 84px; }
+}

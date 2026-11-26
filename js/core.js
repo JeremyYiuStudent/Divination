@@ -208,16 +208,69 @@
       $$('.toggle input', container).forEach((i) => { i.disabled = locked; });
       container.classList.toggle('is-locked', locked);
     },
-    resultActions(getText, onAgain) {
+    resultActions(getText, onAgain, againLabel) {
       const w = h('<div class="result-actions"></div>');
       w.append(
-        UI.btn(L('Begin anew', '重新开始'), onAgain, { primary: true }),
+        UI.btn(againLabel || L('Begin anew', '重新开始'), onAgain, { primary: true }),
         UI.btn(L('Copy result', '复制结果'), async () => {
           try { await navigator.clipboard.writeText(getText()); App.toast(L('Copied to clipboard', '已复制到剪贴板')); }
           catch (e) { App.toast(L('Copy is unavailable here', '此处无法复制')); }
         })
       );
       return w;
+    },
+
+    /** The finished reading. On desktop it is a panel below the ritual, with
+        its pages laid out together. On phones it becomes a full-screen sheet
+        over everything, and the pages are swiped through one at a time.
+        pages: [{ html, label, cls }]; cls 'desk-only' / 'phone-only' limit
+        where a page appears, 'half' pairs pages side by side on desktop.   */
+    reading({ cls = '', title, pages, foot = '', footPhone = foot, getText, onAgain, againLabel }) {
+      const wrap = h(`<div class="reading ${cls}">
+        <div class="result panel rd">
+          <div class="rd-top">
+            <a class="rd-home" href="#/" aria-label="${L('All oracles', '全部占卜')}"><span aria-hidden="true">←</span></a>
+            <h3>${title}</h3>
+            <button type="button" class="rd-peek" aria-label="${L('Look at the table', '查看占卜现场')}"><span aria-hidden="true">⌄</span></button>
+          </div>
+          <div class="rd-pages"></div>
+          <div class="rd-nav"><div class="rd-label"></div><div class="rd-dots"></div></div>
+        </div>
+        <button type="button" class="rd-reopen"><span aria-hidden="true">⌃</span> ${L('The reading', '查看结果')}</button>
+      </div>`);
+      const panel = $('.rd', wrap);
+      const box = $('.rd-pages', panel);
+      const swipePages = [];
+      pages.forEach((p) => {
+        const sec = h(`<section class="rd-page ${p.cls || ''}"></section>`);
+        sec.innerHTML = p.html;
+        box.appendChild(sec);
+        if (!/\bdesk-only\b/.test(p.cls || '')) swipePages.push({ el: sec, label: p.label || '' });
+      });
+      if (foot) box.appendChild(h(`<div class="rd-foot desk-only">${foot}</div>`));
+      if (footPhone && swipePages.length) swipePages[0].el.appendChild(h(`<div class="rd-foot phone-only">${footPhone}</div>`));
+      const dots = $('.rd-dots', panel), label = $('.rd-label', panel);
+      if (swipePages.length < 2) $('.rd-nav', panel).classList.add('single');
+      swipePages.forEach((p, i) => {
+        const d = h(`<button type="button" aria-label="${esc(p.label || String(i + 1))}"></button>`);
+        d.addEventListener('click', () => box.scrollTo({ left: p.el.offsetLeft - box.offsetLeft, behavior: reduced ? 'auto' : 'smooth' }));
+        dots.appendChild(d);
+      });
+      let cur = -1;
+      const sync = () => {
+        const i = Math.max(0, Math.min(swipePages.length - 1, Math.round(box.scrollLeft / Math.max(1, box.clientWidth))));
+        if (i === cur) return;
+        if (cur >= 0) Sfx.tick();
+        cur = i;
+        Array.from(dots.children).forEach((d, k) => d.classList.toggle('on', k === i));
+        label.textContent = swipePages[i] ? swipePages[i].label : '';
+      };
+      box.addEventListener('scroll', sync, { passive: true });
+      sync();
+      $('.rd-peek', panel).addEventListener('click', () => { wrap.classList.add('away'); Sfx.whoosh(0.3); });
+      $('.rd-reopen', wrap).addEventListener('click', () => { wrap.classList.remove('away'); Sfx.flip(); });
+      panel.appendChild(UI.resultActions(getText, () => { wrap.classList.add('away'); onAgain(); }, againLabel));
+      return wrap;
     },
   };
 
@@ -259,6 +312,31 @@
         cleanups.push(() => target.removeEventListener(ev, fn, o));
       },
       onDestroy(fn) { cleanups.push(fn); },
+      /** Keep `el`'s scale factor --k (and its size, --sw / --sh) current, so a
+          stage drawn for design × design px fills whatever room it is given.
+          `design` is [w, h] or a function returning one; call the returned
+          function after the design size changes.                          */
+      fit(el, design, max = 1.15) {
+        const update = () => {
+          const [dw, dh] = typeof design === 'function' ? design() : design;
+          const w = el.clientWidth, hh = el.clientHeight;
+          if (!w || !hh) return;
+          const k = Math.max(0.42, Math.min(max, w / dw, hh / dh));
+          el.style.setProperty('--k', k.toFixed(3));
+          el.style.setProperty('--sw', w + 'px');
+          el.style.setProperty('--sh', hh + 'px');
+        };
+        if (window.ResizeObserver) {
+          const ro = new ResizeObserver(update);
+          ro.observe(el);
+          cleanups.push(() => ro.disconnect());
+        }
+        // Fallbacks for browsers without ResizeObserver or that are not painting yet.
+        ctx.on(window, 'resize', update);
+        ctx.later(update, 60);
+        update();
+        return update;
+      },
       destroy() {
         ctx.alive = false;
         timers.forEach(clearTimeout);
@@ -273,6 +351,10 @@
     oracles: [],
     reduced, T, store,
     register(o) { this.oracles.push(o); },
+    /** Phone layout: one fixed screen, no page scrolling. */
+    phone() { return matchMedia('(max-width: 700px)').matches; },
+    /** Current --k scale of a fitted stage. */
+    k(el) { return parseFloat(getComputedStyle(el).getPropertyValue('--k')) || 1; },
 
     toast(msg) {
       const t = $('#toast');
@@ -372,6 +454,9 @@
     window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
   }
 
+  // On phones the oracles are a swipeable carousel; remember where it was left.
+  let homeIdx = 0;
+
   function homeView(ctx) {
     const el = h(`<section class="view home">
       <div class="hero">
@@ -380,9 +465,12 @@
         <p class="lede">${L('Six oracles, cast the old ways. Choose one, quiet the mind, and begin.', '六种古法占卜。择一而行，静心之后，即可开始。')}</p>
       </div>
       <div class="oracle-grid"></div>
+      <div class="home-dots"></div>
       <p class="footnote">${L('Every cast draws on your device’s cryptographic random source. The meanings shown are the traditional ones; how they apply is yours to read.', '每一次起卦都取自设备的加密随机数。所示释义为传统通释，如何解读由你自己决定。')}</p>
     </section>`);
     const grid = $('.oracle-grid', el);
+    const dots = $('.home-dots', el);
+    const tiles = [];
     App.oracles.forEach((o, i) => {
       const tile = h(`<a class="oracle-tile" href="#/${o.id}" style="--i:${i};--hue:${o.hue}">
         <div class="tile-glare"></div>
@@ -392,6 +480,14 @@
         <p>${tr(o.blurb)}</p>
         <span class="tile-cta">${L('Begin', '开始')} <span aria-hidden="true">→</span></span>
       </a>`);
+      tiles.push(tile);
+      // A tap on a neighbouring card brings it to the centre; a tap on the centred card opens it.
+      ctx.on(tile, 'click', (e) => {
+        if (App.phone() && i !== homeIdx) { e.preventDefault(); goTo(i); }
+      });
+      const dot = h(`<button type="button" aria-label="${esc(tr(o.name))}"></button>`);
+      dot.addEventListener('click', () => goTo(i));
+      dots.appendChild(dot);
       ctx.on(tile, 'pointermove', (e) => {
         if (e.pointerType !== 'mouse') return;
         const r = tile.getBoundingClientRect();
@@ -404,9 +500,34 @@
       ctx.on(tile, 'pointerleave', () => {
         tile.style.setProperty('--rx', '0deg'); tile.style.setProperty('--ry', '0deg');
       });
-      ctx.on(tile, 'pointerenter', () => Sfx.tick());
+      ctx.on(tile, 'pointerenter', (e) => { if (e.pointerType === 'mouse') Sfx.tick(); });
       grid.appendChild(tile);
     });
+
+    function goTo(i, instant) {
+      const t = tiles[i];
+      grid.scrollTo({ left: t.offsetLeft - (grid.clientWidth - t.offsetWidth) / 2, behavior: instant || reduced ? 'auto' : 'smooth' });
+    }
+    let raf = 0;
+    function update() {
+      raf = 0;
+      if (!App.phone()) return;
+      const mid = grid.scrollLeft + grid.clientWidth / 2;
+      let best = homeIdx, bd = Infinity;
+      tiles.forEach((t, i) => {
+        const d = (t.offsetLeft + t.offsetWidth / 2 - mid) / t.offsetWidth;
+        t.style.setProperty('--p', Math.min(1, Math.abs(d)).toFixed(3));
+        t.style.setProperty('--dir', d < 0 ? -1 : 1);
+        if (Math.abs(d) < bd) { bd = Math.abs(d); best = i; }
+      });
+      if (best !== homeIdx) { homeIdx = best; Sfx.tick(); }
+      Array.from(dots.children).forEach((d, i) => d.classList.toggle('on', i === homeIdx));
+    }
+    const queue = () => { if (!raf) raf = requestAnimationFrame(update); };
+    ctx.on(grid, 'scroll', queue, { passive: true });
+    ctx.on(window, 'resize', () => { if (App.phone()) goTo(homeIdx, true); queue(); });
+    ctx.onDestroy(() => cancelAnimationFrame(raf));
+    requestAnimationFrame(() => { if (App.phone()) goTo(homeIdx, true); update(); });
     return el;
   }
 
@@ -465,6 +586,9 @@
     const id = location.hash.replace(/^#\/?/, '');
     const o = App.oracles.find((x) => x.id === id);
     show(o ? oracleView(o) : homeView);
+    document.body.classList.toggle('in-oracle', !!o);
+    const crumb = $('.crumb-name');
+    if (crumb) crumb.textContent = o ? tr(o.name) : '';
     document.title = o ? `${tr(o.name)} · ${L('Divination', '占卜')}` : L('Divination', '占卜');
   }
 

@@ -211,12 +211,13 @@
       root.innerHTML = `
         <div class="controls tc-controls"></div>
         <div class="status tc-status"></div>
-        <div class="tc-table"></div>
+        <div class="tc-table stagebox"></div>
         <div class="actions tc-actions"></div>
         <div class="result-wrap tc-result"></div>`;
       const controls = $('.tc-controls', root);
       const status = $('.tc-status', root);
       const table = $('.tc-table', root);
+      ctx.fit(table, [300, 330], 1.25);
       const actions = $('.tc-actions', root);
       const resultBox = $('.tc-result', root);
 
@@ -231,7 +232,7 @@
       );
 
       function say(text) {
-        status.innerHTML = text;
+        status.innerHTML = `<span>${text}</span>`;
         status.classList.remove('swap'); void status.offsetWidth; status.classList.add('swap');
       }
       function setActions(...els) { actions.innerHTML = ''; els.forEach((e) => e && actions.appendChild(e)); }
@@ -318,7 +319,9 @@
         const ch = cw * 1.7;
         const narrow = W < 600;
         const A = ((narrow ? Math.min(170, 70 + N * 1.3) : Math.min(124, 50 + N)) * Math.PI) / 180;
-        const R = Math.max(130, (W - cw - 16) / (2 * Math.sin(A / 2)));
+        let R = Math.max(130, (W - cw - 16) / (2 * Math.sin(A / 2)));
+        // On phones the fan, raised cards included, has to fit the stage's height too.
+        if (App.phone() && table.clientHeight) R = Math.min(R, Math.max(80, (table.clientHeight - ch - 72) / (1 - Math.cos(A / 2))));
         const height = R * (1 - Math.cos(A / 2)) + ch + 70;
 
         const fan = h(`<div class="tc-fan" style="height:${height.toFixed(0)}px;--fcw:${cw}px"></div>`);
@@ -385,6 +388,13 @@
       /* --------------------------------------------- spread stage */
       function spreadCw() {
         const W = table.clientWidth || 800;
+        if (App.phone()) {
+          // Fit the whole spread, labels included, inside the stage.
+          const H = table.clientHeight || 420;
+          if (spreadId === 'one') return Math.round(Math.min(W * 0.55, (H - 52) / 1.7));
+          if (spreadId === 'three') return Math.round(Math.min((W - 24) / 3.15, (H - 52) / 1.7));
+          return Math.round(Math.min((W - 8) / 7.4, (H - 22) / 6.8));
+        }
         if (spreadId === 'one') return Math.round(Math.min(230, Math.max(150, W * 0.36)));
         if (spreadId === 'three') return Math.round(Math.min(190, Math.max(88, (W - 80) / 3.4)));
         return Math.round(Math.min(118, Math.max(40, (W - 8) / 7.4)));
@@ -472,9 +482,27 @@
         const S = sp();
         say(L('The reading is laid out. Tap any card to look closer.', '牌阵已展开。点击任一张牌可放大查看。'));
         Sfx.reveal();
-        const rows = picks.map((c, k) => `<li style="--d:${k}"><div class="tr-head"><span class="tr-pos">${S.n > 1 ? `<b>${k + 1}</b>` : ''}${esc(tr(S.positions[k]))}</span><span class="tr-name">${esc(cname(c))}</span>${c.reversed ? `<span class="badge">${L('Reversed', '逆位')}</span>` : '<span></span>'}</div><p class="tr-mean">${esc(meaning(c, c.reversed))}</p></li>`).join('');
-        const panel = h(`<div class="result panel tc-res"><h3>${esc(tr(S.name))}</h3><ol class="tc-list">${rows}</ol><p class="hint">${L('Meanings shown are the general traditional senses for each card as drawn.', '所示为每张牌按正逆位的传统通释。')}<br>${L('Card art: the Rider–Waite–Smith deck (1909), illustrated by Pamela Colman Smith — public domain (scans from Wikimedia Commons).', '牌面：莱德–韦特–史密斯塔罗（1909），帕梅拉·科尔曼·史密斯绘制——公有领域（扫描件取自维基共享资源）。')}</p></div>`);
-        panel.appendChild(UI.resultActions(summary, () => { resetDeck(); window.scrollTo({ top: 0, behavior: 'smooth' }); }));
+        const pages = [];
+        if (S.n > 1) {
+          // Phones open on an overview of the whole spread, then one card per page.
+          pages.push({
+            cls: 'phone-only tr-overview', label: L('The spread', '牌阵'),
+            html: `<ol class="tro-list">${picks.map((c, k) => `<li><b>${k + 1}</b><span class="tro-pos">${esc(tr(S.positions[k]))}</span><span class="tro-name">${esc(cname(c))}</span>${c.reversed ? `<span class="badge">${L('Rev.', '逆')}</span>` : '<span></span>'}</li>`).join('')}</ol>
+              <p class="hint">${L('Swipe to read each card.', '左右滑动，逐张查看。')}</p>`,
+          });
+        }
+        picks.forEach((c, k) => pages.push({
+          cls: 'tr-row', label: `${S.n > 1 ? k + 1 + ' · ' : ''}${tr(S.positions[k])}`,
+          html: `<button type="button" class="tr-thumb phone-only${c.reversed ? ' reversed' : ''}" data-k="${k}" aria-label="${esc(cname(c))}">${cardFace(c)}</button>
+            <div class="tr-head" style="--d:${k}"><span class="tr-pos">${S.n > 1 ? `<b>${k + 1}</b>` : ''}${esc(tr(S.positions[k]))}</span><span class="tr-name">${esc(cname(c))}</span>${c.reversed ? `<span class="badge">${L('Reversed', '逆位')}</span>` : '<span></span>'}</div>
+            <p class="tr-mean">${esc(meaning(c, c.reversed))}</p>`,
+        }));
+        const panel = UI.reading({
+          cls: 'tc-res', title: esc(tr(S.name)), pages, getText: summary, onAgain: resetDeck,
+          foot: `<p class="hint">${L('Meanings shown are the general traditional senses for each card as drawn.', '所示为每张牌按正逆位的传统通释。')}<br>${L('Card art: the Rider–Waite–Smith deck (1909), illustrated by Pamela Colman Smith — public domain (scans from Wikimedia Commons).', '牌面：莱德–韦特–史密斯塔罗（1909），帕梅拉·科尔曼·史密斯绘制——公有领域（扫描件取自维基共享资源）。')}</p>`,
+          footPhone: `<p class="hint">${L('Art: Rider–Waite–Smith deck (1909), Pamela Colman Smith · public domain', '牌面：莱德–韦特–史密斯塔罗（1909），帕梅拉·科尔曼·史密斯绘 · 公有领域')}</p>`,
+        });
+        panel.addEventListener('click', (e) => { const t = e.target.closest('.tr-thumb'); if (t) openCard(+t.dataset.k); });
         resultBox.innerHTML = '';
         resultBox.appendChild(panel);
         App.record('tarot', `${tr(S.name)}: ${picks.map((c) => cname(c) + (c.reversed ? L(' (R)', '（逆）') : '')).join(L(', ', '、'))}`,

@@ -64,12 +64,13 @@
       root.innerHTML = `
         <div class="controls kc-controls"></div>
         <div class="status kc-status"></div>
-        <div class="kc-stage"></div>
+        <div class="kc-stage stagebox"></div>
         <div class="actions kc-actions"></div>
         <div class="result-wrap kc-result"></div>`;
       const controls = $('.kc-controls', root);
       const status = $('.kc-status', root);
       const stage = $('.kc-stage', root);
+      const refit = ctx.fit(stage, () => (mode === 'blocks' ? [300, 250] : [300, 550]), 1.15);
       const actions = $('.kc-actions', root);
       const resultBox = $('.kc-result', root);
 
@@ -79,7 +80,7 @@
       ], mode, (v) => { mode = v; App.store.set('kc.mode', v); reset(); }));
 
       function say(text) {
-        status.innerHTML = text;
+        status.innerHTML = `<span>${text}</span>`;
         status.classList.remove('swap'); void status.offsetWidth; status.classList.add('swap');
       }
       function setActions(...els) { actions.innerHTML = ''; els.forEach((e) => e && actions.appendChild(e)); }
@@ -94,6 +95,7 @@
 
       function buildStage() {
         state = 'ready'; stickNo = 0;
+        refit();
         const sticks = Array.from({ length: 34 }, (_, i) => {
           const x = 14 + (i / 33) * 72 + (Math.random() - 0.5) * 3;
           return `<i class="kc-stick" style="left:${x.toFixed(1)}%;--h:${(244 + Math.random() * 46).toFixed(0)}px;--r:${((x - 50) * 0.1 + (Math.random() - 0.5) * 2).toFixed(1)}deg;z-index:${Math.round(Math.random() * 3)}"></i>`;
@@ -265,7 +267,8 @@
           const spins = 3 + Math.floor(Math.random() * 3);
           const endX = spins * 360 + (flatUp[i] ? 0 : 180);
           const endZ = (i ? 1 : -1) * (8 + Math.random() * 30);
-          const spread = Math.min(1, stage.clientWidth / 600); // keep blocks on screen on narrow phones
+          // keep the blocks on screen on narrow phones, and below the header on short ones
+          const spread = Math.min(1, stage.clientWidth / 600, App.phone() ? App.k(stage) : 1);
           const dx = (i ? 1 : -1) * (20 + Math.random() * 40) * spread;
           const dur = 1150 + i * 120 + Math.random() * 120;
           ctx.later(() => Sfx.clack(), dur * 0.72);
@@ -298,7 +301,6 @@
           say(L(`<b>${o.zhT}</b> ${o.py} — ${o.en}.`, `<b>${o.zhS}</b> · ${o.enZh}`));
           showBlocksResult(o);
           App.record('kaucim', L(`Moon blocks: ${o.zhT} ${o.en}`, `掷筊：${o.zhS}`), ocNote(o));
-          setActions(UI.btn(L('Cast again', '再掷一次'), () => castBlocks(), { primary: true }));
           return;
         }
         if (outcome === 'holy') {
@@ -309,34 +311,43 @@
           showStickResult(o);
         } else {
           state = prev;
-          say(L(`<b>${o.zhT}</b> ${o.py} — ${o.en}. ${o.note} The stick is returned; shake again.`, `<b>${o.zhS}</b>——${o.noteZh}此签放回，重新摇签。`));
+          say(L(`<b>${o.zhT}</b> ${o.en}. ${o.note}`, `<b>${o.zhS}</b>——${o.noteZh}`));
           setActions(UI.btn(L('Return the stick', '放回此签'), () => regather(), { primary: true }));
         }
       }
 
       function showBlocksResult(o) {
-        const panel = h(`<div class="result panel kc-res">
-          <div class="kc-verdict"><div class="kc-vzh">${ocName(o)}</div><div class="kc-vpy">${o.py}</div><div class="kc-ven">${ocLabel(o)}</div><p class="meaning"><span class="meaning-label">${L('Traditional meaning', '传统释义')}</span>${ocNote(o)}</p></div>
-          <div class="kc-history">${blockCasts.slice(-12).map((c) => `<span class="kc-h ${c}" title="${ocLabel(OUTCOMES[c])}">${ocName(OUTCOMES[c])}</span>`).join('')}</div>
-        </div>`);
+        const panel = UI.reading({
+          cls: 'kc-res', title: L('The Moon Blocks', '掷筊'), againLabel: L('Cast again', '再掷一次'), onAgain: () => castBlocks(),
+          getText: () => L(`Moon blocks — ${o.zhT} ${o.en}: ${o.note}`, `掷筊 — ${o.zhS}：${o.noteZh}`),
+          pages: [{
+            html: `<div class="kc-verdict"><div class="kc-vzh">${ocName(o)}</div><div class="kc-vpy">${o.py}</div><div class="kc-ven">${ocLabel(o)}</div><p class="meaning"><span class="meaning-label">${L('Traditional meaning', '传统释义')}</span>${ocNote(o)}</p></div>
+              <div class="kc-history">${blockCasts.slice(-12).map((c) => `<span class="kc-h ${c}" title="${ocLabel(OUTCOMES[c])}">${ocName(OUTCOMES[c])}</span>`).join('')}</div>`,
+          }],
+        });
         resultBox.innerHTML = '';
         resultBox.appendChild(panel);
       }
 
       function showStickResult(o) {
-        const panel = h(`<div class="result panel kc-res">
-          <h3>${L('Your Fortune Stick', '所求之签')}</h3>
-          <div class="kc-slip">
-            <div class="kc-slip-no">第${zhNum(stickNo)}${QIAN()}</div>
-            <div class="kc-slip-ar">${L(`Stick № ${stickNo}`, `第 ${stickNo} 签`)}</div>
-            <div class="kc-slip-conf">${ocName(o)} · ${L(`confirmed on ${attempts === 1 ? 'the first draw' : `draw ${attempts}`}`, attempts === 1 ? '首次即获确认' : `第 ${attempts} 次获确认`)}</div>
-          </div>
-          <p class="guide">${L(
-            'A stick confirmed by holy blocks means the gods have agreed to answer, and this number is their reply. Its meaning lies in the verse that the temple’s set assigns to it — each set (Guanyin, Wong Tai Sin, Mazu and others) has its own hundred verses, usually graded from upper (上) through middle (中) to lower (下) fortune.',
-            '经圣筊确认的签，表示神明愿意作答，此签号即是回应。其含义见于庙宇签谱中对应的签诗——观音灵签、黄大仙灵签、妈祖灵签等各有一百首，通常分上、中、下等签。')}</p>
-          <p class="hint">${L(`Look up stick ${stickNo} in the set you follow.`, `请在你所依循的签谱中查阅第${zhNum(stickNo)}签。`)}</p>
-        </div>`);
-        panel.appendChild(UI.resultActions(() => L(`Kau Cim — Stick ${stickNo} (第${zhNum(stickNo)}籤), confirmed by ${o.zhT}`, `求签 — 第${zhNum(stickNo)}签，${o.zhS}确认`), () => { reset(); window.scrollTo({ top: 0, behavior: 'smooth' }); }));
+        const panel = UI.reading({
+          cls: 'kc-res', title: L('Your Fortune Stick', '所求之签'), onAgain: reset,
+          getText: () => L(`Kau Cim — Stick ${stickNo} (第${zhNum(stickNo)}籤), confirmed by ${o.zhT}`, `求签 — 第${zhNum(stickNo)}签，${o.zhS}确认`),
+          pages: [{
+            cls: 'slip', label: L('Your stick', '所得之签'),
+            html: `<div class="kc-slip">
+                <div class="kc-slip-no">第${zhNum(stickNo)}${QIAN()}</div>
+                <div class="kc-slip-ar">${L(`Stick № ${stickNo}`, `第 ${stickNo} 签`)}</div>
+                <div class="kc-slip-conf">${ocName(o)} · ${L(`confirmed on ${attempts === 1 ? 'the first draw' : `draw ${attempts}`}`, attempts === 1 ? '首次即获确认' : `第 ${attempts} 次获确认`)}</div>
+              </div>
+              <p class="hint">${L(`Look up stick ${stickNo} in the set you follow.`, `请在你所依循的签谱中查阅第${zhNum(stickNo)}签。`)}</p>`,
+          }, {
+            cls: 'verse', label: L('Reading the verse', '如何解签'),
+            html: `<p class="guide">${L(
+              'A stick confirmed by holy blocks means the gods have agreed to answer, and this number is their reply. Its meaning lies in the verse that the temple’s set assigns to it — each set (Guanyin, Wong Tai Sin, Mazu and others) has its own hundred verses, usually graded from upper (上) through middle (中) to lower (下) fortune.',
+              '经圣筊确认的签，表示神明愿意作答，此签号即是回应。其含义见于庙宇签谱中对应的签诗——观音灵签、黄大仙灵签、妈祖灵签等各有一百首，通常分上、中、下等签。')}</p>`,
+          }],
+        });
         resultBox.innerHTML = '';
         resultBox.appendChild(panel);
         App.record('kaucim', L(`Stick ${stickNo} · 第${zhNum(stickNo)}籤`, `第${zhNum(stickNo)}签`), L(`Confirmed with ${o.zhT} after ${attempts} draw${attempts > 1 ? 's' : ''}`, `经 ${attempts} 次摇签，${o.zhS}确认`));

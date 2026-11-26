@@ -140,3 +140,67 @@
 .gm-list li { grid-template-rows: auto auto; }
 .gm-lmean { grid-column: 3 / -1; color: var(--ink); opacity: .78; font-size: 15px; line-height: 1.4; }
 @media (max-width: 600px) { .gm-lmean { grid-column: 1 / -1; } }
+
+/* phones: the tray fills the stage; then the shield chart takes its place */
+@media (max-width: 700px) {
+  .gm-stage { --k: 1; display: flex; flex-direction: column; }
+  .gm-stage > .gm-tray.panel { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; gap: calc(5px * var(--k)); padding: 10px; }
+  .gm-group { flex: 1 1 0; min-height: 0; display: grid; grid-template-columns: 15px minmax(0, 1fr); grid-template-rows: repeat(4, minmax(0, 1fr)); column-gap: 4px; padding: 0; }
+  .gm-glabel {
+    grid-row: 1 / -1; grid-column: 1; margin: 0; align-self: center; text-align: center;
+    writing-mode: vertical-rl; transform: rotate(180deg); font-size: 9px; letter-spacing: .12em; white-space: nowrap;
+  }
+  .gm-line { grid-column: 2; min-height: 0; padding: 0 6px; grid-template-columns: 34px minmax(0, 1fr) 24px; gap: 4px; border-radius: 6px; }
+  .gm-rlabel { font-size: 12px; }
+  .gm-marks { min-height: 0; max-height: 100%; overflow: hidden; gap: 2px 3px; }
+  .gm-marks b { width: clamp(5px, calc(var(--sh, 400px) / 48), 9px); height: clamp(5px, calc(var(--sh, 400px) / 48), 9px); }
+  .gm-out { gap: 5px; }
+  .gm-out i { width: clamp(6px, calc(var(--sh, 400px) / 44), 10px); height: clamp(6px, calc(var(--sh, 400px) / 44), 10px); }
+
+  .gm-stage.shield .gm-tray { display: none; }
+  .gm-stage.shield .gm-shield-wrap { flex: 1 1 0; min-height: 0; display: flex; }
+  .gm-shield { flex: 1 1 auto; margin: 0; display: flex; flex-direction: column; justify-content: center; padding: calc(10px * var(--k)) 6px; }
+  .gm-shield-title { margin-bottom: calc(8px * var(--k)); font-size: 10.5px; white-space: nowrap; }
+  .gm-shield-title span { display: inline; font-size: 12.5px; }
+  .gm-grid { gap: calc(8px * var(--k)) 3px; }
+  .gm-glab { grid-row: 1; text-align: center; font-family: var(--display); font-size: 9.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); padding-bottom: 2px; }
+  .gm-glab.d { grid-column: 1 / 5; }
+  .gm-glab.m { grid-column: 5 / 9; }
+  .gm-fig.m1, .gm-fig.m2, .gm-fig.m3, .gm-fig.m4, .gm-fig.d1, .gm-fig.d2, .gm-fig.d3, .gm-fig.d4 { grid-row: 2; }
+  .gm-fig.n1, .gm-fig.n2, .gm-fig.n3, .gm-fig.n4 { grid-row: 3; }
+  .gm-fig.rw, .gm-fig.lw { grid-row: 4; }
+  .gm-fig.judge { grid-row: 5; }
+  .gm-grid .gm-fig.recon { grid-row: 5; grid-column: 7 / 9; width: auto; }
+  .gm-fig.m1 .gm-ftitle, .gm-fig.m2 .gm-ftitle, .gm-fig.m3 .gm-ftitle, .gm-fig.m4 .gm-ftitle,
+  .gm-fig.d1 .gm-ftitle, .gm-fig.d2 .gm-ftitle, .gm-fig.d3 .gm-ftitle, .gm-fig.d4 .gm-ftitle { display: none; }
+  .gm-fig { padding: calc(7px * var(--k)) 2px calc(6px * var(--k)); border-radius: 8px; }
+  .gm-ftitle { font-size: max(7px, calc(9.5px * var(--k))); letter-spacing: .06em; }
+  .gm-dots { gap: calc(5px * var(--k)); margin: calc(6px * var(--k)) 0 calc(4px * var(--k)); }
+  .gm-drow { gap: calc(6px * var(--k)); height: calc(7px * var(--k)); }
+  .gm-drow i { width: calc(7px * var(--k)); height: calc(7px * var(--k)); }
+  .gm-fname { font-size: max(9px, calc(13px * var(--k))); }
+  .gm-fig.judge { padding: calc(9px * var(--k)) 4px calc(8px * var(--k)); }
+  .gm-fig.judge .gm-drow { gap: calc(11px * var(--k)); height: calc(10px * var(--k)); }
+  .gm-fig.judge .gm-drow i { width: calc(10px * var(--k)); height: calc(10px * var(--k)); }
+  .gm-fig.judge .gm-fname { font-size: max(12px, calc(17px * var(--k))); }
+  .gm-fig.judge .gm-ftitle { font-size: max(8px, calc(11px * var(--k))); }
+
+  .gm-res .gm-key { padding: 14px 14px; }
+  .gm-res .gm-key.judge { max-width: none; }
+  .gm-res .gm-key.judge .gm-kname { font-size: 26px; }
+  .gm-kdots { display: flex; flex-direction: column; align-items: center; gap: 6px; margin: 10px 0 8px; }
+  .gm-kdots .gm-drow { height: 11px; gap: 14px; }
+  .gm-kdots .gm-drow i { width: 11px; height: 11px; }
+  .gm-res .rd-page.judge .guide { margin-top: 12px; padding: 2px 0 2px 12px; font-size: 14.5px; line-height: 1.45; }
+  .gm-res .rd-page.gm-pair { gap: 12px; }
+  .gm-pc {
+    display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 14px; align-items: center;
+    padding: 14px 14px; border: 1px solid var(--line); border-radius: 14px; background: rgba(0, 0, 0, .22);
+  }
+  .gm-pc .gm-kdots { margin: 0; gap: 7px; }
+  .gm-pc .gm-kdots .gm-drow { gap: 12px; height: 10px; }
+  .gm-pc .gm-kdots .gm-drow i { width: 10px; height: 10px; }
+  .gm-pc-name { font-family: var(--display); font-size: 18px; font-weight: 600; color: var(--gold-hi); line-height: 1.3; margin-top: 2px; }
+  .gm-pc-name span { font-family: var(--body); font-weight: 400; font-size: 14.5px; font-style: italic; color: var(--muted); }
+  .gm-pc-mean { margin: 4px 0 0; font-size: 15px; line-height: 1.4; }
+}

@@ -41,12 +41,13 @@
       root.innerHTML = `
         <div class="controls og-controls"></div>
         <div class="status og-status"></div>
-        <div class="og-table"></div>
+        <div class="og-table stagebox"></div>
         <div class="actions og-actions"></div>
         <div class="result-wrap og-result"></div>`;
       const controls = $('.og-controls', root);
       const status = $('.og-status', root);
       const table = $('.og-table', root);
+      ctx.fit(table, [320, 300], 1.25);
       const actions = $('.og-actions', root);
       const resultBox = $('.og-result', root);
 
@@ -59,7 +60,7 @@
 
       const M = () => { const m = METHODS[methodId]; return { n: m.n, label: tr(m.label), pos: m.pos.map(tr) }; };
       function say(text) {
-        status.innerHTML = text;
+        status.innerHTML = `<span>${text}</span>`;
         status.classList.remove('swap'); void status.offsetWidth; status.classList.add('swap');
       }
       function setActions(...els) { actions.innerHTML = ''; els.forEach((e) => e && actions.appendChild(e)); }
@@ -114,9 +115,10 @@
         const lift = st.style.getPropertyValue('--lift');
         st.style.zIndex = 100;
         Sfx.whoosh(0.4);
+        const rise = App.phone() ? Math.round(st.offsetHeight * 0.55) : 170;
         await ctx.anim(st, [
           { transform: `rotate(${a}) translateY(${lift})` },
-          { transform: `rotate(${a}) translateY(-170px)` },
+          { transform: `rotate(${a}) translateY(-${rise}px)` },
         ], { duration: 700, easing: 'cubic-bezier(.4,0,.2,1)' });
 
         const r1 = st.getBoundingClientRect();
@@ -147,16 +149,18 @@
         setActions();
         say(M().n === 1 ? L('The stave is drawn.', '木条已抽出。') : L('The staves are drawn.', '木条已全部抽出。'));
         Sfx.reveal();
-        const cards = drawn.map((f, k) => `<div class="og-card" style="--d:${k}">
-          <div class="eyebrow">${esc(M().pos[k])}</div>
-          <div class="og-cglyph"><span>᚛${f.glyph}᚜</span></div>
-          <div class="og-name">${f.name}</div>
-          <div class="og-meta">${f.letter} · ${tree(f)}</div>
-          <div class="og-aicme">${L(f.aicme, f.aicmeZh)}</div>
-          <p class="meaning"><span class="meaning-label">${L('General meaning', '通释')}</span>${esc(fMeaning(f))}</p>
-        </div>`).join('');
-        const panel = h(`<div class="result panel og-res"><h3>${esc(M().label)}</h3><div class="og-cards">${cards}</div></div>`);
-        panel.appendChild(UI.resultActions(summary, () => { reset(); window.scrollTo({ top: 0, behavior: 'smooth' }); }));
+        const pages = drawn.map((f, k) => ({
+          cls: 'card', label: M().pos[k],
+          html: `<div class="og-card" style="--d:${k}">
+            <div class="eyebrow">${esc(M().pos[k])}</div>
+            <div class="og-cglyph"><span>᚛${f.glyph}᚜</span></div>
+            <div class="og-name">${f.name}</div>
+            <div class="og-meta">${f.letter} · ${tree(f)}</div>
+            <div class="og-aicme">${L(f.aicme, f.aicmeZh)}</div>
+            <p class="meaning"><span class="meaning-label">${L('General meaning', '通释')}</span>${esc(fMeaning(f))}</p>
+          </div>`,
+        }));
+        const panel = UI.reading({ cls: 'og-res', title: esc(M().label), pages, getText: summary, onAgain: reset });
         resultBox.innerHTML = '';
         resultBox.appendChild(panel);
         App.record('ogham', `${M().label}: ${drawn.map((f) => f.name).join(L(', ', '、'))}`, drawn.map((f) => `${f.name} (${tree(f)}) — ${fMeaning(f)}`).join(' · '));
